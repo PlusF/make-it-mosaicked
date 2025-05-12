@@ -4,6 +4,7 @@ import "./App.css";
 function App() {
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
   const [mosaicSize, setMosaicSize] = React.useState<number>(10);
+  const [mosaicSizeOption, setMosaicSizeOption] = React.useState<string>("中");
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [isSelecting, setIsSelecting] = React.useState<boolean>(false);
   const [selectionStart, setSelectionStart] = React.useState<{
@@ -16,6 +17,20 @@ function App() {
   } | null>(null);
   const [originalImageData, setOriginalImageData] =
     React.useState<ImageData | null>(null);
+
+  // モザイクサイズのマッピング
+  const mosaicSizeOptions = {
+    小: 5,
+    中: 10,
+    大: 25,
+    特大: 40,
+  };
+
+  // モザイクサイズの選択が変更されたときの処理
+  const handleMosaicSizeChange = (option: string) => {
+    setMosaicSizeOption(option);
+    setMosaicSize(mosaicSizeOptions[option as keyof typeof mosaicSizeOptions]);
+  };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -331,17 +346,23 @@ function App() {
           )}
         </div>
         <div className="mosaic-controls">
-          <label>
-            モザイクサイズ:
-            <input
-              type="range"
-              min="5"
-              max="50"
-              value={mosaicSize}
-              onChange={(e) => setMosaicSize(Number(e.target.value))}
-            />
-            {mosaicSize}px
-          </label>
+          <div className="mosaic-size-options">
+            <p>モザイクサイズ:</p>
+            <div className="radio-group">
+              {Object.keys(mosaicSizeOptions).map((option) => (
+                <label key={option} className="radio-label">
+                  <input
+                    type="radio"
+                    name="mosaicSize"
+                    value={option}
+                    checked={mosaicSizeOption === option}
+                    onChange={() => handleMosaicSizeChange(option)}
+                  />
+                  {option}
+                </label>
+              ))}
+            </div>
+          </div>
           <div className="button-hstack">
             <button onClick={applyMosaic} disabled={!selectedImage}>
               モザイクを適用
