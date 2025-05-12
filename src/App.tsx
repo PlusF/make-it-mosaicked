@@ -171,7 +171,7 @@ function App() {
 
     // 選択範囲がない場合は画像全体にモザイクをかける
     if (!selectionStart || !selectionEnd) {
-      applyMosaicToWholeImage();
+      applyMosaicToRegion(0, 0, canvas.width, canvas.height);
       return;
     }
 
@@ -189,61 +189,74 @@ function App() {
       return;
     }
 
+    // 選択範囲にモザイクを適用
+    applyMosaicToRegion(startX, startY, width, height);
+
+    // 選択状態をリセット
+    setSelectionStart(null);
+    setSelectionEnd(null);
+  };
+
+  // 指定された領域にモザイク処理を適用する関数
+  const applyMosaicToRegion = (
+    startX: number,
+    startY: number,
+    width: number,
+    height: number
+  ) => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d")!;
+
     try {
-      // 選択範囲のイメージデータを取得
-      const imageData = ctx.getImageData(startX, startY, width, height);
-      const data = imageData.data;
+      // 元の領域を一時キャンバスにコピー
+      const tempCanvas = document.createElement("canvas");
+      const tempCtx = tempCanvas.getContext("2d")!;
 
-      // 平均色計算のためのバッファ
-      let sumR, sumG, sumB, count;
+      // 縮小サイズを計算（モザイクサイズに基づく）
+      const scaleX = Math.max(1, Math.floor(width / mosaicSize));
+      const scaleY = Math.max(1, Math.floor(height / mosaicSize));
 
-      // モザイク処理
-      for (let y = 0; y < height; y += mosaicSize) {
-        for (let x = 0; x < width; x += mosaicSize) {
-          // 各ブロックの平均色を計算
-          sumR = sumG = sumB = count = 0;
+      // 一時キャンバスのサイズを設定
+      tempCanvas.width = scaleX;
+      tempCanvas.height = scaleY;
 
-          // ブロック内のピクセルの平均を取る
-          for (let my = 0; my < mosaicSize && y + my < height; my++) {
-            for (let mx = 0; mx < mosaicSize && x + mx < width; mx++) {
-              const index = ((y + my) * width + (x + mx)) * 4;
-              sumR += data[index];
-              sumG += data[index + 1];
-              sumB += data[index + 2];
-              count++;
-            }
-          }
+      // 選択領域を縮小して描画（ここでピクセルが平均化される）
+      tempCtx.drawImage(
+        canvas,
+        startX,
+        startY,
+        width,
+        height,
+        0,
+        0,
+        scaleX,
+        scaleY
+      );
 
-          // 平均色の計算
-          const avgR = Math.round(sumR / count);
-          const avgG = Math.round(sumG / count);
-          const avgB = Math.round(sumB / count);
-
-          // ブロック内の全ピクセルを平均色で塗る
-          for (let my = 0; my < mosaicSize && y + my < height; my++) {
-            for (let mx = 0; mx < mosaicSize && x + mx < width; mx++) {
-              const index = ((y + my) * width + (x + mx)) * 4;
-              data[index] = avgR;
-              data[index + 1] = avgG;
-              data[index + 2] = avgB;
-            }
-          }
-        }
-      }
-
-      // 処理したイメージデータを描画
-      ctx.putImageData(imageData, startX, startY);
+      // 縮小した画像を元のサイズに拡大して描画（ピクセル化効果が得られる）
+      ctx.imageSmoothingEnabled = false; // ピクセル化のために補間を無効化
+      ctx.drawImage(
+        tempCanvas,
+        0,
+        0,
+        scaleX,
+        scaleY,
+        startX,
+        startY,
+        width,
+        height
+      );
 
       // 更新された画像データ全体を保存
       setOriginalImageData(ctx.getImageData(0, 0, canvas.width, canvas.height));
-
-      // 選択状態をリセット
-      setSelectionStart(null);
-      setSelectionEnd(null);
     } catch (error) {
       console.error("Error during mosaic processing:", error);
       // エラーが発生した場合は元の画像に戻す
-      ctx.putImageData(originalImageData, 0, 0);
+      if (originalImageData) {
+        ctx.putImageData(originalImageData, 0, 0);
+      }
     }
   };
 
@@ -262,50 +275,8 @@ function App() {
       // 画像を描画
       ctx.drawImage(img, 0, 0);
 
-      // モザイク処理
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-
-      // 平均色計算のためのバッファ
-      let sumR, sumG, sumB, count;
-
-      for (let y = 0; y < canvas.height; y += mosaicSize) {
-        for (let x = 0; x < canvas.width; x += mosaicSize) {
-          // 各ブロックの平均色を計算
-          sumR = sumG = sumB = count = 0;
-
-          // ブロック内のピクセルの平均を取る
-          for (let my = 0; my < mosaicSize && y + my < canvas.height; my++) {
-            for (let mx = 0; mx < mosaicSize && x + mx < canvas.width; mx++) {
-              const index = ((y + my) * canvas.width + (x + mx)) * 4;
-              sumR += data[index];
-              sumG += data[index + 1];
-              sumB += data[index + 2];
-              count++;
-            }
-          }
-
-          // 平均色の計算
-          const avgR = Math.round(sumR / count);
-          const avgG = Math.round(sumG / count);
-          const avgB = Math.round(sumB / count);
-
-          // ブロック内の全ピクセルを平均色で塗る
-          for (let my = 0; my < mosaicSize && y + my < canvas.height; my++) {
-            for (let mx = 0; mx < mosaicSize && x + mx < canvas.width; mx++) {
-              const index = ((y + my) * canvas.width + (x + mx)) * 4;
-              data[index] = avgR;
-              data[index + 1] = avgG;
-              data[index + 2] = avgB;
-            }
-          }
-        }
-      }
-
-      ctx.putImageData(imageData, 0, 0);
-
-      // 更新された画像データを保存
-      setOriginalImageData(ctx.getImageData(0, 0, canvas.width, canvas.height));
+      // 画像全体にモザイク処理を適用
+      applyMosaicToRegion(0, 0, canvas.width, canvas.height);
     };
     img.src = selectedImage;
   };
