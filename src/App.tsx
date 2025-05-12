@@ -275,27 +275,6 @@ function App() {
     }
   };
 
-  const applyMosaicToWholeImage = () => {
-    if (!selectedImage || !canvasRef.current) return;
-
-    const img = new Image();
-    img.onload = () => {
-      const canvas = canvasRef.current!;
-      const ctx = canvas.getContext("2d")!;
-
-      // キャンバスのサイズを画像に合わせる
-      canvas.width = img.width;
-      canvas.height = img.height;
-
-      // 画像を描画
-      ctx.drawImage(img, 0, 0);
-
-      // 画像全体にモザイク処理を適用
-      applyMosaicToRegion(0, 0, canvas.width, canvas.height);
-    };
-    img.src = selectedImage;
-  };
-
   const saveImage = () => {
     if (!canvasRef.current) return;
 
