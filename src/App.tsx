@@ -298,7 +298,7 @@ function App() {
 
   return (
     <div className="app">
-      <h1>freee mosaic</h1>
+      <h1>モザイクマサキボタン</h1>
       <div className="controls">
         <div className="instructions">
           <p>
