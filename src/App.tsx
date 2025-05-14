@@ -298,7 +298,7 @@ function App() {
 
   return (
     <div className="app">
-      <h1>モザイクマサキボタン</h1>
+      <h1>Make It Mosaicked</h1>
       <div className="controls">
         <div className="instructions">
           <p>

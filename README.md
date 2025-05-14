@@ -1,4 +1,4 @@
-# freee-mosaic
+# Make It Mosaicked
 
 モザイクをかけるだけ
 
