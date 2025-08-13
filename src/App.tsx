@@ -1,8 +1,34 @@
+import {
+  ActionIcon,
+  Box,
+  Button,
+  Card,
+  Center,
+  Container,
+  Divider,
+  FileInput,
+  Grid,
+  Group,
+  Notification,
+  Paper,
+  Stack,
+  Text,
+  Title,
+} from "@mantine/core";
+import {
+  IconCheck,
+  IconCopy,
+  IconDeviceFloppy,
+  IconRefresh,
+  IconSparkles,
+  IconUpload,
+  IconX,
+} from "@tabler/icons-react";
 import React from "react";
-import "./App.css";
 
 function App() {
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
+  const [fileName, setFileName] = React.useState<string | null>(null);
   const [mosaicSize, setMosaicSize] = React.useState<number>(10);
   const [mosaicSizeOption, setMosaicSizeOption] = React.useState<string>("中");
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -19,27 +45,24 @@ function App() {
     React.useState<ImageData | null>(null);
   const [showCopySuccess, setShowCopySuccess] = React.useState<boolean>(false);
 
-  // モザイクサイズのマッピング
   const mosaicSizeOptions = {
-    小: 5,
-    中: 10,
-    大: 25,
-    特大: 40,
+    小: 8,
+    中: 16,
+    大: 32,
+    特大: 64,
   };
 
-  // モザイクサイズの選択が変更されたときの処理
   const handleMosaicSizeChange = (option: string) => {
     setMosaicSizeOption(option);
     setMosaicSize(mosaicSizeOptions[option as keyof typeof mosaicSizeOptions]);
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const handleImageUpload = (file: File | null) => {
     if (file) {
+      setFileName(file.name);
       const reader = new FileReader();
       reader.onload = (e) => {
         setSelectedImage(e.target?.result as string);
-        // 新しい画像がアップロードされたら選択状態をリセット
         setSelectionStart(null);
         setSelectionEnd(null);
       };
@@ -47,7 +70,6 @@ function App() {
     }
   };
 
-  // クリップボードからの画像貼り付け処理
   const handlePaste = React.useCallback((event: ClipboardEvent) => {
     const items = event.clipboardData?.items;
     if (!items) return;
@@ -56,10 +78,10 @@ function App() {
       if (items[i].type.indexOf("image") !== -1) {
         const blob = items[i].getAsFile();
         if (blob) {
+          setFileName("clipboard-image.png");
           const reader = new FileReader();
           reader.onload = (e) => {
             setSelectedImage(e.target?.result as string);
-            // 新しい画像が貼り付けられたら選択状態をリセット
             setSelectionStart(null);
             setSelectionEnd(null);
           };
@@ -70,7 +92,6 @@ function App() {
     }
   }, []);
 
-  // ペーストイベントのリスナーを設定・解除
   React.useEffect(() => {
     window.addEventListener("paste", handlePaste);
     return () => {
@@ -78,7 +99,6 @@ function App() {
     };
   }, [handlePaste]);
 
-  // 画像読み込み時に原画像を保存
   React.useEffect(() => {
     if (selectedImage && canvasRef.current) {
       const img = new Image();
@@ -91,7 +111,6 @@ function App() {
 
         ctx.drawImage(img, 0, 0);
 
-        // 原画像データを保存
         setOriginalImageData(
           ctx.getImageData(0, 0, canvas.width, canvas.height)
         );
@@ -100,17 +119,14 @@ function App() {
     }
   }, [selectedImage]);
 
-  // 選択範囲を描画
   React.useEffect(() => {
     if (!canvasRef.current || !originalImageData) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d")!;
 
-    // 画像を元に戻す
     ctx.putImageData(originalImageData, 0, 0);
 
-    // 選択範囲を描画
     if (selectionStart && selectionEnd) {
       ctx.strokeStyle = "red";
       ctx.lineWidth = 2;
@@ -122,7 +138,6 @@ function App() {
     }
   }, [selectionStart, selectionEnd, originalImageData]);
 
-  // キャンバス上のマウス座標を取得する（スケーリングを考慮）
   const getCanvasCoordinates = (
     e: React.MouseEvent<HTMLCanvasElement>
   ): { x: number; y: number } => {
@@ -131,7 +146,6 @@ function App() {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
 
-    // クライアント座標をキャンバス座標に変換（スケーリングを考慮）
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
 
@@ -168,10 +182,8 @@ function App() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d")!;
 
-    // 画像を元に戻す
     ctx.putImageData(originalImageData, 0, 0);
 
-    // 選択状態をリセット
     setSelectionStart(null);
     setSelectionEnd(null);
   };
@@ -182,16 +194,13 @@ function App() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d")!;
 
-    // 画像を元に戻す
     ctx.putImageData(originalImageData, 0, 0);
 
-    // 選択範囲がない場合は画像全体にモザイクをかける
     if (!selectionStart || !selectionEnd) {
       applyMosaicToRegion(0, 0, canvas.width, canvas.height);
       return;
     }
 
-    // 選択範囲の座標を正規化（開始点が常に左上になるように）
     const startX = Math.floor(Math.min(selectionStart.x, selectionEnd.x));
     const startY = Math.floor(Math.min(selectionStart.y, selectionEnd.y));
     const endX = Math.ceil(Math.max(selectionStart.x, selectionEnd.x));
@@ -199,21 +208,17 @@ function App() {
     const width = endX - startX;
     const height = endY - startY;
 
-    // 範囲チェック
     if (width <= 0 || height <= 0) {
       console.warn("Invalid selection size:", width, height);
       return;
     }
 
-    // 選択範囲にモザイクを適用
     applyMosaicToRegion(startX, startY, width, height);
 
-    // 選択状態をリセット
     setSelectionStart(null);
     setSelectionEnd(null);
   };
 
-  // 指定された領域にモザイク処理を適用する関数
   const applyMosaicToRegion = (
     startX: number,
     startY: number,
@@ -226,19 +231,17 @@ function App() {
     const ctx = canvas.getContext("2d")!;
 
     try {
-      // 元の領域を一時キャンバスにコピー
       const tempCanvas = document.createElement("canvas");
       const tempCtx = tempCanvas.getContext("2d")!;
 
-      // 縮小サイズを計算（モザイクサイズに基づく）
-      const scaleX = Math.max(1, Math.floor(width / mosaicSize));
-      const scaleY = Math.max(1, Math.floor(height / mosaicSize));
+      // ピクセルサイズから縮小後のサイズを計算
+      const mosaicCountX = Math.ceil(width / mosaicSize);
+      const mosaicCountY = Math.ceil(height / mosaicSize);
 
-      // 一時キャンバスのサイズを設定
-      tempCanvas.width = scaleX;
-      tempCanvas.height = scaleY;
+      tempCanvas.width = mosaicCountX;
+      tempCanvas.height = mosaicCountY;
 
-      // 選択領域を縮小して描画（ここでピクセルが平均化される）
+      // 元画像を縮小
       tempCtx.drawImage(
         canvas,
         startX,
@@ -247,29 +250,27 @@ function App() {
         height,
         0,
         0,
-        scaleX,
-        scaleY
+        mosaicCountX,
+        mosaicCountY
       );
 
-      // 縮小した画像を元のサイズに拡大して描画（ピクセル化効果が得られる）
-      ctx.imageSmoothingEnabled = false; // ピクセル化のために補間を無効化
+      // 縮小画像を元のサイズに拡大（補間なし）
+      ctx.imageSmoothingEnabled = false;
       ctx.drawImage(
         tempCanvas,
         0,
         0,
-        scaleX,
-        scaleY,
+        mosaicCountX,
+        mosaicCountY,
         startX,
         startY,
         width,
         height
       );
 
-      // 更新された画像データ全体を保存
       setOriginalImageData(ctx.getImageData(0, 0, canvas.width, canvas.height));
     } catch (error) {
       console.error("Error during mosaic processing:", error);
-      // エラーが発生した場合は元の画像に戻す
       if (originalImageData) {
         ctx.putImageData(originalImageData, 0, 0);
       }
@@ -281,19 +282,23 @@ function App() {
 
     const canvas = canvasRef.current;
 
-    // canvasの内容をDataURLとして取得
     const dataURL = canvas.toDataURL("image/png");
 
-    // ダウンロード用のリンクを作成
     const a = document.createElement("a");
     a.href = dataURL;
-    a.download = "mosaic-image.png";
 
-    // リンクをクリックしてダウンロードを開始
+    if (fileName) {
+      const nameWithoutExtension =
+        fileName.substring(0, fileName.lastIndexOf(".")) || fileName;
+      const extension = fileName.substring(fileName.lastIndexOf(".")) || ".png";
+      a.download = `${nameWithoutExtension}_mosaicked${extension}`;
+    } else {
+      a.download = "image_mosaicked.png";
+    }
+
     document.body.appendChild(a);
     a.click();
 
-    // 不要になったリンク要素を削除
     document.body.removeChild(a);
   };
 
@@ -303,7 +308,6 @@ function App() {
     const canvas = canvasRef.current;
 
     try {
-      // canvasからBlobを作成
       const blob = await new Promise<Blob | null>((resolve) => {
         canvas.toBlob((blob) => {
           resolve(blob);
@@ -311,14 +315,11 @@ function App() {
       });
 
       if (blob) {
-        // ClipboardItemを使用してクリップボードにコピー
         const item = new ClipboardItem({ "image/png": blob });
         await navigator.clipboard.write([item]);
-        
-        // 成功メッセージを表示
+
         setShowCopySuccess(true);
-        
-        // 3秒後にメッセージを非表示にする
+
         setTimeout(() => {
           setShowCopySuccess(false);
         }, 3000);
@@ -328,82 +329,240 @@ function App() {
     }
   };
 
+  const clearImage = () => {
+    setSelectedImage(null);
+    setFileName(null);
+    setSelectionStart(null);
+    setSelectionEnd(null);
+    setOriginalImageData(null);
+  };
+
   return (
-    <div className="app">
-      <h1>Make It Mosaicked</h1>
-      <div className="controls">
-        <div className="instructions">
-          <p>
-            画像をアップロードするか、クリップボードから画像を貼り付けてください（Ctrl+V
-            または Command+V）。
-          </p>
-        </div>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleImageUpload}
-          className="file-input"
-        />
-        <div className="preview">
-          {selectedImage && (
-            <canvas
-              ref={canvasRef}
-              className="canvas"
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-            />
-          )}
-        </div>
-        <div className="mosaic-controls">
-          <div className="mosaic-size-options">
-            <p>モザイクサイズ:</p>
-            <div className="radio-group">
-              {Object.keys(mosaicSizeOptions).map((option) => (
-                <label key={option} className="radio-label">
-                  <input
-                    type="radio"
-                    name="mosaicSize"
-                    value={option}
-                    checked={mosaicSizeOption === option}
-                    onChange={() => handleMosaicSizeChange(option)}
+    <Container size="xl" py="md">
+      <Stack>
+        <Title order={1} c="blue.7" ta="center" mb="md">
+          Make It Mosaicked
+        </Title>
+
+        <Grid>
+          <Grid.Col span={{ base: 12, md: 4 }}>
+            <Stack>
+              <Card withBorder>
+                <Stack>
+                  <Text fw={500} size="sm">
+                    使い方
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    画像をアップロードするか、クリップボードから画像を貼り付けてください
+                    （Ctrl+V または Command+V）
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    モザイクをかけたい領域をマウスでドラッグして選択してください。
+                    何も選択せずに「モザイクを適用」を押すと、画像全体にモザイクがかかります。
+                  </Text>
+                </Stack>
+              </Card>
+              {selectedImage && (
+                <>
+                  <Card withBorder>
+                    <Stack>
+                      <Text fw={500} size="sm">
+                        モザイクサイズ
+                      </Text>
+                      <Group gap="md" align="center">
+                        {Object.entries(mosaicSizeOptions).map(
+                          ([label, size]) => (
+                            <Box
+                              key={label}
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                gap: 6,
+                                cursor: "pointer",
+                                opacity: mosaicSizeOption === label ? 1 : 0.6,
+                                transition: "all 0.2s ease",
+                              }}
+                              onClick={() => handleMosaicSizeChange(label)}
+                            >
+                              <Box
+                                style={{
+                                  width: 48,
+                                  height: 48,
+                                  backgroundImage: `linear-gradient(45deg, #868e96 25%, transparent 25%, transparent 75%, #868e96 75%),
+                                                     linear-gradient(45deg, #868e96 25%, transparent 25%, transparent 75%, #868e96 75%)`,
+                                  backgroundColor: "#dee2e6",
+                                  backgroundPosition: `0 0, ${size / 2}px ${
+                                    size / 2
+                                  }px`,
+                                  backgroundSize: `${size}px ${size}px`,
+                                  borderRadius: 4,
+                                  border:
+                                    mosaicSizeOption === label
+                                      ? "2px solid var(--mantine-color-blue-5)"
+                                      : "2px solid var(--mantine-color-gray-3)",
+                                }}
+                              />
+                              <Text
+                                size="xs"
+                                fw={mosaicSizeOption === label ? 600 : 400}
+                                c={
+                                  mosaicSizeOption === label
+                                    ? "blue.6"
+                                    : "dimmed"
+                                }
+                              >
+                                {label}
+                              </Text>
+                              <Text
+                                size="xs"
+                                c="dimmed"
+                                style={{ fontSize: 10 }}
+                              >
+                                {size}px
+                              </Text>
+                            </Box>
+                          )
+                        )}
+                      </Group>
+                    </Stack>
+                  </Card>
+
+                  <Divider />
+
+                  <Stack>
+                    <Button
+                      leftSection={<IconRefresh />}
+                      variant="default"
+                      disabled={!selectionStart || !selectionEnd}
+                      onClick={resetSelection}
+                      fullWidth
+                    >
+                      選択をリセット
+                    </Button>
+
+                    <Button
+                      leftSection={<IconSparkles />}
+                      onClick={applyMosaic}
+                      disabled={!selectedImage}
+                      fullWidth
+                    >
+                      モザイクを適用
+                    </Button>
+
+                    <Button
+                      leftSection={<IconDeviceFloppy />}
+                      variant="light"
+                      onClick={saveImage}
+                      disabled={!selectedImage}
+                      fullWidth
+                    >
+                      画像を保存
+                    </Button>
+
+                    <Button
+                      leftSection={<IconCopy />}
+                      variant="light"
+                      onClick={copyToClipboard}
+                      disabled={!selectedImage}
+                      fullWidth
+                    >
+                      クリップボードにコピー
+                    </Button>
+                  </Stack>
+                </>
+              )}
+            </Stack>
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, md: 8 }}>
+            {!selectedImage ? (
+              <Paper h={400} withBorder radius="md" p="md">
+                <Stack h="100%" justify="center" align="center" gap="lg">
+                  <Stack align="center" gap="xs">
+                    <Text size="lg" c="dimmed" ta="center">
+                      画像をアップロードして開始
+                    </Text>
+                    <Text size="sm" c="dimmed" ta="center">
+                      またはクリップボードから貼り付け（Ctrl+V / Cmd+V）
+                    </Text>
+                  </Stack>
+                  <FileInput
+                    placeholder="画像を選択"
+                    leftSection={<IconUpload />}
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    w={250}
+                    variant="filled"
                   />
-                  {option}
-                </label>
-              ))}
-            </div>
-          </div>
-          <div className="button-hstack">
-            <button onClick={applyMosaic} disabled={!selectedImage}>
-              モザイクを適用
-            </button>
-            {selectionStart && selectionEnd && (
-              <button onClick={resetSelection}>選択をリセット</button>
+                </Stack>
+              </Paper>
+            ) : (
+              <Paper bg="gray.0" h="100%" radius="md" p={45} pos="relative">
+                <ActionIcon
+                  variant="outline"
+                  color="gray.5"
+                  size="lg"
+                  radius="sm"
+                  pos="absolute"
+                  top={8}
+                  right={8}
+                  onClick={clearImage}
+                  style={{ zIndex: 10 }}
+                >
+                  <IconX size={20} />
+                </ActionIcon>
+                {fileName && (
+                  <Text
+                    size="xs"
+                    c="dimmed"
+                    pos="absolute"
+                    bottom={8}
+                    right={8}
+                    style={{ zIndex: 10 }}
+                  >
+                    {`${originalImageData?.width}px x ${originalImageData?.height}px ${fileName}`}
+                  </Text>
+                )}
+                <Center h="100%">
+                  <Box
+                    component="canvas"
+                    ref={canvasRef}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                    maw="100%"
+                    mah="100%"
+                    style={{
+                      display: "block",
+                      width: "auto",
+                      height: "auto",
+                      cursor: "crosshair",
+                    }}
+                  />
+                </Center>
+              </Paper>
             )}
-            <button onClick={saveImage} disabled={!selectedImage}>
-              画像を保存
-            </button>
-            <button onClick={copyToClipboard} disabled={!selectedImage}>
-              クリップボードにコピー
-            </button>
-          </div>
-        </div>
-      </div>
-      {selectedImage && (
-        <div className="instructions">
-          <p>モザイクをかけたい領域をマウスでドラッグして選択してください。</p>
-          <p>
-            何も選択せずに「モザイクを適用」を押すと、画像全体にモザイクがかかります。
-          </p>
-        </div>
-      )}
+          </Grid.Col>
+        </Grid>
+      </Stack>
+
       {showCopySuccess && (
-        <div className="toast-notification">
-          ✓ 画像をクリップボードにコピーしました
-        </div>
+        <Notification
+          icon={<IconCheck />}
+          color="teal"
+          title="成功"
+          onClose={() => setShowCopySuccess(false)}
+          pos="fixed"
+          bottom={20}
+          right={20}
+          style={{ zIndex: 1000 }}
+        >
+          画像をクリップボードにコピーしました
+        </Notification>
       )}
-    </div>
+    </Container>
   );
 }
 
