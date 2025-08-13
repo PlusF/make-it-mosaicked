@@ -17,6 +17,7 @@ function App() {
   } | null>(null);
   const [originalImageData, setOriginalImageData] =
     React.useState<ImageData | null>(null);
+  const [showCopySuccess, setShowCopySuccess] = React.useState<boolean>(false);
 
   // モザイクサイズのマッピング
   const mosaicSizeOptions = {
@@ -296,6 +297,37 @@ function App() {
     document.body.removeChild(a);
   };
 
+  const copyToClipboard = async () => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+
+    try {
+      // canvasからBlobを作成
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((blob) => {
+          resolve(blob);
+        }, "image/png");
+      });
+
+      if (blob) {
+        // ClipboardItemを使用してクリップボードにコピー
+        const item = new ClipboardItem({ "image/png": blob });
+        await navigator.clipboard.write([item]);
+        
+        // 成功メッセージを表示
+        setShowCopySuccess(true);
+        
+        // 3秒後にメッセージを非表示にする
+        setTimeout(() => {
+          setShowCopySuccess(false);
+        }, 3000);
+      }
+    } catch (error) {
+      console.error("クリップボードへのコピーに失敗しました:", error);
+    }
+  };
+
   return (
     <div className="app">
       <h1>Make It Mosaicked</h1>
@@ -352,6 +384,9 @@ function App() {
             <button onClick={saveImage} disabled={!selectedImage}>
               画像を保存
             </button>
+            <button onClick={copyToClipboard} disabled={!selectedImage}>
+              クリップボードにコピー
+            </button>
           </div>
         </div>
       </div>
@@ -361,6 +396,11 @@ function App() {
           <p>
             何も選択せずに「モザイクを適用」を押すと、画像全体にモザイクがかかります。
           </p>
+        </div>
+      )}
+      {showCopySuccess && (
+        <div className="toast-notification">
+          ✓ 画像をクリップボードにコピーしました
         </div>
       )}
     </div>
