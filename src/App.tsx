@@ -447,7 +447,9 @@ function App() {
                       disabled={!selectedImage}
                       fullWidth
                     >
-                      モザイクを適用
+                      {selectionStart && selectionEnd
+                        ? "選択範囲にモザイクを適用"
+                        : "画像全体にモザイクを適用"}
                     </Button>
 
                     <Button
@@ -481,7 +483,7 @@ function App() {
                 <Stack h="100%" justify="center" align="center" gap="lg">
                   <Stack align="center" gap="xs">
                     <Text size="lg" c="dimmed" ta="center">
-                      画像をアップロードして開始
+                      画像を選択して開始
                     </Text>
                     <Text size="sm" c="dimmed" ta="center">
                       またはクリップボードから貼り付け（Ctrl+V / Cmd+V）
