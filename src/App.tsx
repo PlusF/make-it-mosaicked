@@ -352,11 +352,11 @@ function App() {
                   <Text fw={500} size="sm">
                     使い方
                   </Text>
-                  <Text size="xs" c="dimmed">
+                  <Text size="xs" c="gray.7">
                     画像をアップロードするか、クリップボードから画像を貼り付けてください
                     （Ctrl+V または Command+V）
                   </Text>
-                  <Text size="xs" c="dimmed">
+                  <Text size="xs" c="gray.7">
                     モザイクをかけたい領域をマウスでドラッグして選択してください。
                     何も選択せずに「モザイクを適用」を押すと、画像全体にモザイクがかかります。
                   </Text>
@@ -409,14 +409,14 @@ function App() {
                                 c={
                                   mosaicSizeOption === label
                                     ? "blue.6"
-                                    : "dimmed"
+                                    : "gray.7"
                                 }
                               >
                                 {label}
                               </Text>
                               <Text
                                 size="xs"
-                                c="dimmed"
+                                c="gray.6"
                                 style={{ fontSize: 10 }}
                               >
                                 {size}px
@@ -482,10 +482,10 @@ function App() {
               <Paper h={400} withBorder radius="md" p="md">
                 <Stack h="100%" justify="center" align="center" gap="lg">
                   <Stack align="center" gap="xs">
-                    <Text size="lg" c="dimmed" ta="center">
+                    <Text size="lg" c="gray.7" ta="center">
                       画像を選択して開始
                     </Text>
-                    <Text size="sm" c="dimmed" ta="center">
+                    <Text size="sm" c="gray.6" ta="center">
                       またはクリップボードから貼り付け（Ctrl+V / Cmd+V）
                     </Text>
                   </Stack>
@@ -517,7 +517,7 @@ function App() {
                 {fileName && (
                   <Text
                     size="xs"
-                    c="dimmed"
+                    c="gray.7"
                     pos="absolute"
                     bottom={8}
                     right={8}
